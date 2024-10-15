@@ -1,0 +1,106 @@
+//@version=5
+indicator("Lunar Phases Overlay", shorttitle="Lunar Phases", overlay=true, max_labels_count=365)
+
+// ==========================================================================================
+//  Lunar Phases Overlay Script
+//  Version: 1.0
+//  Author: Rick Apuzzo III
+//  Date: October 2024
+//  
+//  Description:
+//  This script overlays lunar phases on a trading chart, allowing users to visualize 
+//  the phases of the moon (New Moon, Full Moon, First Quarter, Last Quarter, etc.) 
+//  directly on the price chart. It also includes a label with the month and year at 
+//  the first bar of each month, positioned at the bottom of the bar.
+//
+//  Key Features:
+//  - Displays moon phase labels above the price chart for each lunar phase.
+//  - Adds a label with the current month and year below the first bar of every month.
+//  - Configurable for different time zones through the "timezone_offset" input.
+//
+//  Usage:
+//  Useful for traders looking to examine potential correlations between lunar phases
+//  and market price action.
+//
+//  Note:
+//  Please adjust the time zone using the "timezone_offset" setting to match your local time.
+//
+//  Script updates are posted to the git repository: https://github.com/RApuzzo3/lunar-phases-overlay
+//
+//  Thank you for using this script!
+// ==========================================================================================
+
+// User settings for timezone offset
+timezone_offset = input.int(defval=0, title="Time Zone Offset (Hours)", minval=-12, maxval=14)
+
+// Function to calculate the lunar phase using correct Pine Script syntax for version 5
+lunar_phase(t) =>
+    days_since_new_moon = (t - timestamp(1970, 01, 07, 0, 0)) / (29.530588 * 86400000)
+    phase = (days_since_new_moon % 1) * 100
+    phase
+
+// Get current time with the user's timezone adjustment
+current_time = time + (timezone_offset * 3600000)
+
+// Get the lunar phase for the current time
+phase = lunar_phase(current_time)
+
+// Define all eight moon phases using the calculated phase percentage
+is_new_moon = phase < 2.5 or phase > 97.5
+is_waxing_crescent = phase >= 2.5 and phase < 22.5
+is_first_quarter = phase >= 22.5 and phase < 27.5
+is_waxing_gibbous = phase >= 27.5 and phase < 47.5
+is_full_moon = phase >= 47.5 and phase < 52.5
+is_waning_gibbous = phase >= 52.5 and phase < 72.5
+is_last_quarter = phase >= 72.5 and phase < 77.5
+is_waning_crescent = phase >= 77.5 and phase < 97.5
+
+// Use if-else structure to assign moon phase text for all eight phases
+var moon_text = ""
+if (is_new_moon)
+    moon_text := "🌑 New Moon"
+else if (is_waxing_crescent)
+    moon_text := "🌒 Waxing Crescent"
+else if (is_first_quarter)
+    moon_text := "🌓 First Quarter"
+else if (is_waxing_gibbous)
+    moon_text := "🌔 Waxing Gibbous"
+else if (is_full_moon)
+    moon_text := "🌕 Full Moon"
+else if (is_waning_gibbous)
+    moon_text := "🌖 Waning Gibbous"
+else if (is_last_quarter)
+    moon_text := "🌗 Last Quarter"
+else if (is_waning_crescent)
+    moon_text := "🌘 Waning Crescent"
+
+// Detect start of a new month (first bar of the first day of a month)
+is_first_day_of_month = dayofmonth(time) == 1
+
+// Map month number to month name
+month_name = month(time) == 1 ? "January" :
+             month(time) == 2 ? "February" :
+             month(time) == 3 ? "March" :
+             month(time) == 4 ? "April" :
+             month(time) == 5 ? "May" :
+             month(time) == 6 ? "June" :
+             month(time) == 7 ? "July" :
+             month(time) == 8 ? "August" :
+             month(time) == 9 ? "September" :
+             month(time) == 10 ? "October" :
+             month(time) == 11 ? "November" :
+             "December"
+
+// Plot moon phase as a label at the top of the bar (i.e., at the high value)
+label.new(bar_index, high + 10, text=moon_text, color=color.white, textcolor=color.black, size=size.small)
+
+// If it's the first bar of the month, plot a second label with month and year at the bottom of the bar
+if (is_first_day_of_month)
+    label.new(bar_index, low - 10, text=month_name + " " + str.tostring(year(time)), color=color.white, textcolor=color.black, size=size.small)
+
+// Plot phase as a histogram at the bottom (if you want to see the lunar phase percentage as well)
+plot(phase, color=color.new(color.blue, 0), linewidth=1, title="Lunar Phase")
+
+// Plot horizontal lines to visualize the different phases
+hline(50, "Full Moon", color=color.white, linestyle=hline.style_dashed)
+hline(0, "New Moon", color=color.white, linestyle=hline.style_dashed)
